@@ -1,0 +1,16 @@
+{
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "always"
+    },
+    "files.exclude": {
+        "**/dist": true,
+        "**/node_modules": true
+    },
+    "typescript.format.enable": false, // Let Prettier handle formatting
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    }
+}
