@@ -13,6 +13,13 @@ export class User extends Document {
   @Prop({ required: true })
   password: string;
 
+  // these 2 fields are not a requirement for the assessment, but useful for tracking
+  @Prop({ default: Date.now })
+  createdAt: Date;
+
+  @Prop({ default: Date.now })
+  updatedAt: Date;
+
   comparePassword: (candidate: string) => Promise<boolean>;
 }
 
@@ -26,6 +33,7 @@ UserSchema.pre<UserDocument>('save', async function (next) {
     process.env.BCRYPT_SALT_ROUNDS ? parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) : 12,
   );
   this.password = await bcrypt.hash(this.password, salt);
+  this.updatedAt = new Date();
   next();
 });
 

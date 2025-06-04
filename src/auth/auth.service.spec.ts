@@ -1,7 +1,10 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Model } from 'mongoose';
 
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 
@@ -9,17 +12,24 @@ describe('AuthService', () => {
   let authService: AuthService;
   let usersService: UsersService;
   let jwtService: JwtService;
-
-  const mockUsersService = {
-    findByUsername: jest.fn(),
-  };
+  let userModel: Model<User>;
 
   const mockJwtService = {
     signAsync: jest.fn(),
   };
 
+  const mockUsersService = {
+    findByUsername: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRoot('mongodb://localhost:27017/test', {
+          connectionName: 'auth-test',
+        }),
+        MongooseModule.forFeature([{ name: User.name, schema: UserSchema }], 'auth-test'),
+      ],
       providers: [
         AuthService,
         {
@@ -36,10 +46,17 @@ describe('AuthService', () => {
     authService = module.get<AuthService>(AuthService);
     usersService = module.get<UsersService>(UsersService);
     jwtService = module.get<JwtService>(JwtService);
+    userModel = module.get<Model<User>>(getModelToken(User.name, 'auth-test'));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
+    await userModel.deleteMany({});
+  });
+
+  afterAll(async () => {
+    await userModel.db.dropDatabase();
+    await userModel.db.close();
   });
 
   describe('validateUser', () => {
