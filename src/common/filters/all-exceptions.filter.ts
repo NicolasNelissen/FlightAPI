@@ -34,16 +34,26 @@ export class AllExceptionsFilter implements ExceptionFilter {
       });
     }
 
+    // since this is our only way to look into the exceptions,
+    // make an exception for development purposes
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-undef, no-console
+      console.log(exception);
+    }
+
     const status = HttpStatus.INTERNAL_SERVER_ERROR;
 
     const message = 'Something went wrong';
 
+    const additionalInfo =
+      process.env.NODE_ENV === 'development'
+        ? { path: request.url, timestamp: new Date().toISOString() }
+        : undefined;
+
     response.status(status).json({
       statusCode: status,
       message,
-      // TODO: remove this
-      path: request.url,
-      timestamp: new Date().toISOString(),
+      ...(additionalInfo && additionalInfo),
     });
   }
 }

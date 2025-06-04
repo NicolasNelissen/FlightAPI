@@ -9,7 +9,9 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -28,6 +30,8 @@ import { mapFlight } from './utilities/flightResponse.util';
 
 @ApiBearerAuth()
 @ApiTags('Flights')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'))
 @Controller('flights')
 export class FlightsController {
   constructor(private readonly flightsService: FlightsService) {}
