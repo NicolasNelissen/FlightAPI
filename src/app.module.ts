@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { PassportModule } from '@nestjs/passport';
 
 import { AuthModule } from '../src/auth/auth.module';
 import { FlightsModule } from '../src/flights/flights.module';
@@ -14,7 +13,6 @@ import { UsersModule } from '../src/users/users.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/flight-api'),
-    PassportModule.register({ defaultStrategy: 'jwt' }),
     AuthModule,
     UsersModule,
     FlightsModule,
