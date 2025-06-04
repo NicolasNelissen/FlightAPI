@@ -36,7 +36,7 @@ export class AuthController {
     const token = await this.authService.login(loginDto);
 
     if (!token) {
-      throw new UnauthorizedException('Invalid username or password');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     return { token };

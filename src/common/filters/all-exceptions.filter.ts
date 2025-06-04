@@ -7,6 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+
 import { extractHttpExceptionMessage } from '../utilities/httpException.util';
 
 @Catch()
