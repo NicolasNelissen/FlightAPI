@@ -1,16 +1,23 @@
+import { MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ObjectId } from 'mongodb';
 
+import { ValidatedJwtData } from '../../src/auth/jwt.strategy';
+import { toDtoArray } from '../../src/common/utilities/dto-helper.util';
 import { CreateFlightDto } from './dto/create-flight.dto';
+import { FlightResponseDto } from './dto/flight-response.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { FlightsController } from './flights.controller';
 import { FlightsService } from './flights.service';
-import { Flight } from './schemas/flight.schema';
-import { mapFlight } from './utilities/flightResponse.util';
+import { Flight, FlightSchema } from './schemas/flight.schema';
 
 describe('FlightsController', () => {
   let controller: FlightsController;
   let service: FlightsService;
+  const mockUserData: ValidatedJwtData = {
+    userId: new ObjectId().toString(),
+    username: 'testuser',
+  };
 
   const mockFlightsService = {
     create: jest.fn(),
@@ -23,6 +30,10 @@ describe('FlightsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FlightsController],
+      imports: [
+        MongooseModule.forRoot('mongodb://localhost/test'),
+        MongooseModule.forFeature([{ name: Flight.name, schema: FlightSchema }]),
+      ],
       providers: [
         {
           provide: FlightsService,
@@ -65,6 +76,7 @@ describe('FlightsController', () => {
           std: new Date('2024-09-30T22:00:00.000Z'),
           sta: new Date('2024-09-30T23:00:00.000Z'),
         },
+        user: new ObjectId(mockUserData.userId),
         departure: 'LPPD',
         destination: 'LPLA',
         createdAt: new Date(),
@@ -73,7 +85,7 @@ describe('FlightsController', () => {
 
       mockFlightsService.create.mockResolvedValue(expectedResult);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, mockUserData);
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -88,7 +100,7 @@ describe('FlightsController', () => {
         }),
       );
 
-      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(service.create).toHaveBeenCalledWith(dto, mockUserData.userId);
     });
 
     it('should throw if service.create throws', async () => {
@@ -105,7 +117,7 @@ describe('FlightsController', () => {
 
       mockFlightsService.create.mockRejectedValue(new Error('Create failed'));
 
-      await expect(controller.create(dto)).rejects.toThrow('Create failed');
+      await expect(controller.create(dto, mockUserData)).rejects.toThrow('Create failed');
     });
 
     it('should call service.create and return the flight with mapped id', async () => {
@@ -129,6 +141,7 @@ describe('FlightsController', () => {
           std: new Date('2024-09-30T22:00:00.000Z'),
           sta: new Date('2024-09-30T23:00:00.000Z'),
         },
+        user: new ObjectId(mockUserData.userId),
         departure: 'LPPD',
         destination: 'LPLA',
         createdAt: new Date(),
@@ -137,7 +150,7 @@ describe('FlightsController', () => {
 
       mockFlightsService.create.mockResolvedValue(expectedResult);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, mockUserData);
 
       expect(result).toHaveProperty('id', expectedResult._id!.toString());
       expect(result).not.toHaveProperty('_id');
@@ -155,7 +168,7 @@ describe('FlightsController', () => {
         }),
       );
 
-      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(service.create).toHaveBeenCalledWith(dto, mockUserData.userId);
     });
   });
 
@@ -170,6 +183,7 @@ describe('FlightsController', () => {
             std: new Date(),
             sta: new Date(),
           },
+          user: new ObjectId(mockUserData.userId),
           departure: 'LPPD',
           destination: 'LPLA',
           createdAt: new Date(),
@@ -183,6 +197,7 @@ describe('FlightsController', () => {
             std: new Date(),
             sta: new Date(),
           },
+          user: new ObjectId(mockUserData.userId),
           departure: 'LPLA',
           destination: 'LPPD',
           createdAt: new Date(),
@@ -191,9 +206,9 @@ describe('FlightsController', () => {
       ];
       mockFlightsService.findAll.mockResolvedValue(flights);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(mockUserData);
 
-      expect(result).toEqual(flights.map(mapFlight));
+      expect(result).toEqual(toDtoArray(FlightResponseDto, flights));
       expect(service.findAll).toHaveBeenCalled();
     });
   });
@@ -216,7 +231,7 @@ describe('FlightsController', () => {
 
       mockFlightsService.findOne.mockResolvedValue(flight);
 
-      const result = await controller.findOne('123');
+      const result = await controller.findOne(flight._id!.toString());
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -230,13 +245,13 @@ describe('FlightsController', () => {
         }),
       );
 
-      expect(service.findOne).toHaveBeenCalledWith('123');
+      expect(service.findOne).toHaveBeenCalledWith(flight._id!.toString());
     });
 
     it('should return null if flight is not found', async () => {
       mockFlightsService.findOne.mockResolvedValue(null);
 
-      await expect(controller.findOne('non-existent-id')).rejects.toThrow('Flight not found');
+      expect(await controller.findOne('non-existent-id')).toBeNull();
     });
   });
 
@@ -300,8 +315,7 @@ describe('FlightsController', () => {
 
       mockFlightsService.update.mockResolvedValue(null);
 
-      // expect a notfound exception to be thrown
-      await expect(controller.update('invalid-id', dto)).rejects.toThrow('Flight not found');
+      expect(await controller.update('invalid-id', dto)).toBeNull();
 
       expect(service.update).toHaveBeenCalledWith('invalid-id', dto);
     });
@@ -332,14 +346,6 @@ describe('FlightsController', () => {
       await expect(controller.remove('123')).resolves.toBeUndefined();
 
       expect(service.remove).toHaveBeenCalledWith('123');
-    });
-
-    it('should throw NotFoundException if flight to remove is not found', async () => {
-      mockFlightsService.remove.mockResolvedValue(false);
-
-      await expect(controller.remove('non-existent-id')).rejects.toThrow('Flight not found');
-
-      expect(service.remove).toHaveBeenCalledWith('non-existent-id');
     });
 
     it('should throw if service.remove throws', async () => {

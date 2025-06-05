@@ -1,25 +1,23 @@
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { setupAppGlobals } from './common/utilities/app-setup.util';
 
+/**
+ * Bootstraps the NestJS application.
+ *
+ * - Creates the NestJS application instance using the AppModule.
+ * - Applies global pipes and filters using the setupAppGlobals utility.
+ * - Configures Swagger/OpenAPI documentation for the API.
+ * - Starts the HTTP server on the specified port (default: 3000).
+ *
+ * This function is the entry point of the application and is called immediately after its definition.
+ */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      exceptionFactory: () => {
-        return new BadRequestException('Invalid payload');
-      },
-    }),
-  );
-
-  app.useGlobalFilters(new AllExceptionsFilter());
+  setupAppGlobals(app);
 
   const config = new DocumentBuilder()
     .setTitle('Flight API')

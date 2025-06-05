@@ -5,13 +5,11 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -19,50 +17,68 @@ import {
   ApiParam,
   ApiResponse,
   ApiTags,
-  getSchemaPath,
 } from '@nestjs/swagger';
 
+import { CurrentUser } from '../../src/auth/decorators/current-user.decorator';
+import type { ValidatedJwtData } from '../../src/auth/jwt.strategy';
+import { JwtAuthGuard } from '../../src/auth/jwt-auth.guard';
+import { ObjectIdParam } from '../../src/common/decorators/swagger/objectid-param.decorator';
+import { toDto, toDtoArray, toDtoOrNull } from '../../src/common/utilities/dto-helper.util';
 import { CreateFlightDto } from './dto/create-flight.dto';
+import { FlightResponseDto } from './dto/flight-response.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { FlightsService } from './flights.service';
-import { Flight } from './schemas/flight.schema';
-import { mapFlight } from './utilities/flightResponse.util';
+import { flightResponseSchema } from './schemas/flight-response.schema';
 
+/**
+ * Controller for managing flight resources.
+ *
+ * Provides endpoints for creating, retrieving, updating, and deleting flights.
+ * All endpoints require JWT authentication.
+ *
+ * - POST /flights: Create a new flight.
+ * - GET /flights: Retrieve all flights for the authenticated user.
+ * - GET /flights/:flightId: Retrieve a specific flight by its ID.
+ * - PATCH /flights/:flightId: Update a specific flight.
+ * - DELETE /flights/:flightId: Delete a specific flight.
+ */
 @ApiBearerAuth()
 @ApiTags('Flights')
-@ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuard)
 @Controller('flights')
 export class FlightsController {
   constructor(private readonly flightsService: FlightsService) {}
 
+  /**
+   * Creates a new flight for the authenticated user.
+   *
+   * @param createFlightDto - The data for the new flight.
+   * @param user - The current authenticated user.
+   * @returns The created flight as a response DTO.
+   */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiCreatedResponse({
     description: 'Successful operation',
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(Flight) },
-        {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              description: 'Internal Identifier for the flight',
-            },
-          },
-        },
-      ],
-    },
+    schema: flightResponseSchema,
   })
   @ApiResponse({ status: 400, description: 'Invalid payload' })
   @ApiResponse({ status: 401, description: 'User is not authenticated' })
   @ApiResponse({ status: 500, description: 'Something went wrong' })
-  async create(@Body() createFlightDto: CreateFlightDto) {
-    const flight = await this.flightsService.create(createFlightDto);
-    return mapFlight(flight);
+  async create(
+    @Body() createFlightDto: CreateFlightDto,
+    @CurrentUser() user: ValidatedJwtData,
+  ): Promise<FlightResponseDto> {
+    const flight = await this.flightsService.create(createFlightDto, user.userId);
+    return toDto(FlightResponseDto, flight);
   }
 
+  /**
+   * Retrieves all flights for the authenticated user.
+   *
+   * @param user - The current authenticated user.
+   * @returns An array of flight response DTOs.
+   */
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiResponse({
@@ -70,110 +86,79 @@ export class FlightsController {
     description: 'Successful operation',
     schema: {
       type: 'array',
-      items: {
-        allOf: [
-          { $ref: '#/components/schemas/Flight' },
-          {
-            type: 'object',
-            properties: {
-              id: { type: 'string', description: 'Internal Identifier for the flight' },
-            },
-          },
-        ],
-      },
+      items: flightResponseSchema,
     },
   })
   @ApiResponse({ status: 401, description: 'User is not authenticated' })
   @ApiResponse({ status: 500, description: 'Something went wrong' })
-  async findAll() {
-    const flights = await this.flightsService.findAll();
-    return flights.map(mapFlight);
+  async findAll(@CurrentUser() user: ValidatedJwtData): Promise<FlightResponseDto[]> {
+    const flights = await this.flightsService.findAll(user.userId);
+    return toDtoArray(FlightResponseDto, flights);
   }
 
+  /**
+   * Retrieves a specific flight by its ID.
+   *
+   * @param flightId - The ID of the flight to retrieve.
+   * @returns The flight response DTO, or null if not found.
+   */
   @Get(':flightId')
   @ApiOperation({ summary: 'Retrieve a flight by id', operationId: 'retrieveFlight' })
-  @ApiParam({
-    name: 'flightId',
-    required: true,
-    schema: { type: 'string' },
-  })
+  @ApiParam(ObjectIdParam('flightId', 'Flight ID'))
   @ApiResponse({
     status: 200,
     description: 'Successful operation',
-    schema: {
-      allOf: [
-        { $ref: getSchemaPath(Flight) },
-        {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Internal Identifier for the flight' },
-          },
-        },
-      ],
-    },
+    schema: flightResponseSchema,
   })
   @ApiResponse({ status: 401, description: 'User is not authenticated' })
   @ApiResponse({ status: 404, description: 'Flight not found' })
   @ApiResponse({ status: 500, description: 'Something went wrong' })
-  async findOne(@Param('flightId') flightId: string) {
+  async findOne(@Param('flightId') flightId: string): Promise<FlightResponseDto | null> {
     const flight = await this.flightsService.findOne(flightId);
-    if (!flight) {
-      throw new NotFoundException('Flight not found');
-    }
-    return mapFlight(flight);
+    return toDtoOrNull(FlightResponseDto, flight);
   }
 
+  /**
+   * Updates a specific flight.
+   *
+   * @param flightId - The ID of the flight to update.
+   * @param updateFlightDto - The updated flight data.
+   * @returns The updated flight response DTO, or null if not found.
+   */
   @Patch(':flightId')
   @ApiOperation({ summary: 'Update a flight' })
-  @ApiParam({
-    name: 'flightId',
-    description: 'The ID of the flight to update',
-    schema: { type: 'string' },
-  })
+  @ApiParam(ObjectIdParam('flightId', 'Flight ID'))
   @ApiResponse({
     status: 200,
     description: 'Successful operation',
-    schema: {
-      allOf: [
-        { $ref: '#/components/schemas/Flight' },
-        {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Internal Identifier for the flight' },
-          },
-        },
-      ],
-    },
+    schema: flightResponseSchema,
   })
   @ApiResponse({ status: 400, description: 'Invalid payload' })
   @ApiResponse({ status: 401, description: 'User is not authenticated' })
   @ApiResponse({ status: 404, description: 'Flight not found' })
   @ApiResponse({ status: 500, description: 'Something went wrong' })
-  async update(@Param('flightId') flightId: string, @Body() updateFlightDto: UpdateFlightDto) {
+  async update(
+    @Param('flightId') flightId: string,
+    @Body() updateFlightDto: UpdateFlightDto,
+  ): Promise<FlightResponseDto | null> {
     const updatedFlight = await this.flightsService.update(flightId, updateFlightDto);
-    if (!updatedFlight) {
-      throw new NotFoundException('Flight not found');
-    }
-    return mapFlight(updatedFlight);
+    return toDtoOrNull(FlightResponseDto, updatedFlight);
   }
 
+  /**
+   * Deletes a specific flight by its ID.
+   *
+   * @param flightId - The ID of the flight to delete.
+   */
   @Delete(':flightId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove a flights by id', operationId: 'deleteFlight' })
-  @ApiParam({
-    name: 'flightId',
-    required: true,
-    description: 'Flight ID',
-    schema: { type: 'string' },
-  })
+  @ApiParam(ObjectIdParam('flightId', 'Flight ID'))
   @ApiResponse({ status: 204, description: 'The flight was deleted successfully.' })
   @ApiResponse({ status: 401, description: 'User is not authenticated' })
   @ApiResponse({ status: 404, description: 'Flight not found' })
   @ApiResponse({ status: 500, description: 'Something went wrong' })
   async remove(@Param('flightId') flightId: string): Promise<void> {
-    const deletedFlight = await this.flightsService.remove(flightId);
-    if (!deletedFlight) {
-      throw new NotFoundException('Flight not found');
-    }
+    await this.flightsService.remove(flightId);
   }
 }
