@@ -11,22 +11,21 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOperation,
   ApiParam,
   ApiResponse,
+  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../src/auth/decorators/current-user.decorator';
-import type { ValidatedJwtData } from '../../src/auth/jwt.strategy';
+import type { ValidatedJwtData } from '../../src/auth/dto/jwt-validated-data.dto';
 import { JwtAuthGuard } from '../../src/auth/jwt-auth.guard';
 import { ObjectIdParam } from '../../src/common/decorators/swagger/objectid-param.decorator';
 import { toDto, toDtoArray, toDtoOrNull } from '../../src/common/utilities/dto-helper.util';
-import { CreateFlightDto } from './dto/create-flight.dto';
+import { Flight } from './dto/flight.dto';
 import { FlightResponseDto } from './dto/flight-response.dto';
-import { UpdateFlightDto } from './dto/update-flight.dto';
 import { FlightsService } from './flights.service';
 import { flightResponseSchema } from './schemas/flight-response.schema';
 
@@ -42,8 +41,8 @@ import { flightResponseSchema } from './schemas/flight-response.schema';
  * - PATCH /flights/:flightId: Update a specific flight.
  * - DELETE /flights/:flightId: Delete a specific flight.
  */
-@ApiBearerAuth()
 @ApiTags('Flights')
+@ApiSecurity('bearerAuth')
 @UseGuards(JwtAuthGuard)
 @Controller('flights')
 export class FlightsController {
@@ -52,12 +51,13 @@ export class FlightsController {
   /**
    * Creates a new flight for the authenticated user.
    *
-   * @param createFlightDto - The data for the new flight.
+   * @param flightDto - The data for the new flight.
    * @param user - The current authenticated user.
    * @returns The created flight as a response DTO.
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a flight', operationId: 'createFlight' })
   @ApiCreatedResponse({
     description: 'Successful operation',
     schema: flightResponseSchema,
@@ -66,10 +66,10 @@ export class FlightsController {
   @ApiResponse({ status: 401, description: 'User is not authenticated' })
   @ApiResponse({ status: 500, description: 'Something went wrong' })
   async create(
-    @Body() createFlightDto: CreateFlightDto,
+    @Body() flightDto: Flight,
     @CurrentUser() user: ValidatedJwtData,
   ): Promise<FlightResponseDto> {
-    const flight = await this.flightsService.create(createFlightDto, user.userId);
+    const flight = await this.flightsService.create(flightDto, user.userId);
     return toDto(FlightResponseDto, flight);
   }
 
@@ -81,6 +81,7 @@ export class FlightsController {
    */
   @Get()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Retrieve all flights', operationId: 'retrieveAllFlights' })
   @ApiResponse({
     status: 200,
     description: 'Successful operation',
@@ -103,7 +104,7 @@ export class FlightsController {
    * @returns The flight response DTO, or null if not found.
    */
   @Get(':flightId')
-  @ApiOperation({ summary: 'Retrieve a flight by id', operationId: 'retrieveFlight' })
+  @ApiOperation({ summary: 'Retrieve a flights by id', operationId: 'retrieveFlight' })
   @ApiParam(ObjectIdParam('flightId', 'Flight ID'))
   @ApiResponse({
     status: 200,
@@ -122,11 +123,11 @@ export class FlightsController {
    * Updates a specific flight.
    *
    * @param flightId - The ID of the flight to update.
-   * @param updateFlightDto - The updated flight data.
+   * @param flightDto - The updated flight data.
    * @returns The updated flight response DTO, or null if not found.
    */
   @Patch(':flightId')
-  @ApiOperation({ summary: 'Update a flight' })
+  @ApiOperation({ summary: 'Update a flight', operationId: 'updateFlight' })
   @ApiParam(ObjectIdParam('flightId', 'Flight ID'))
   @ApiResponse({
     status: 200,
@@ -139,9 +140,9 @@ export class FlightsController {
   @ApiResponse({ status: 500, description: 'Something went wrong' })
   async update(
     @Param('flightId') flightId: string,
-    @Body() updateFlightDto: UpdateFlightDto,
+    @Body() flightDto: Flight,
   ): Promise<FlightResponseDto | null> {
-    const updatedFlight = await this.flightsService.update(flightId, updateFlightDto);
+    const updatedFlight = await this.flightsService.update(flightId, flightDto);
     return toDtoOrNull(FlightResponseDto, updatedFlight);
   }
 

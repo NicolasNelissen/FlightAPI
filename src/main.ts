@@ -20,15 +20,24 @@ async function bootstrap() {
   setupAppGlobals(app);
 
   const config = new DocumentBuilder()
-    .setTitle('Flight API')
+    .setTitle('Aviobook Code Challenge')
     .setDescription('CRUD API for the AVIOBOOK assessment')
-    .setVersion('1.0')
-    .addBearerAuth()
+    .setVersion('1.0.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'bearerAuth',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
   await app.listen(process.env.PORT ?? 3000);
+
+  //writeFileSync('./openapi.yaml', yaml.dump(document));
 }
 bootstrap();

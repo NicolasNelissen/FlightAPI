@@ -1,6 +1,6 @@
 import { Request } from 'express';
 
-import { ValidatedJwtData } from '../../../src/auth/jwt.strategy';
+import { ValidatedJwtData } from '../../../src/auth/dto/jwt-validated-data.dto';
 
 /**
  * Extends the Express Request type to optionally include a user property
