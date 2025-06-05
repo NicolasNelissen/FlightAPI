@@ -14,6 +14,14 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
+/**
+ * Controller for authentication endpoints.
+ *
+ * Provides endpoints for user login and registration.
+ *
+ * - POST /auth: Authenticate a user and return a JWT token.
+ * - POST /auth/register: Register a new user.
+ */
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -22,6 +30,13 @@ export class AuthController {
     private readonly usersService: UsersService,
   ) {}
 
+  /**
+   * Authenticates a user and returns a JWT token.
+   *
+   * @param loginDto - The login credentials (username and password).
+   * @returns An object containing the JWT token.
+   * @throws UnauthorizedException if credentials are invalid.
+   */
   @Post('')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Create a token for a user' })
@@ -42,6 +57,13 @@ export class AuthController {
     return { token };
   }
 
+  /**
+   * Registers a new user.
+   *
+   * @param registerDto - The registration data (username and password).
+   * @returns The newly created user's id and username.
+   * @throws ConflictException if the username is already taken.
+   */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })

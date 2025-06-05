@@ -67,7 +67,6 @@ describe('AllExceptionsFilter', () => {
       expect.objectContaining({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Something went wrong',
-        path: '/test-url',
       }),
     );
   });

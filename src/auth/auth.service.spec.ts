@@ -2,7 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
@@ -64,8 +64,8 @@ describe('AuthService', () => {
     const password = 'testpass';
 
     it('should return user if password matches', async () => {
-      const user = {
-        _id: 'some-id',
+      const user: Partial<User> = {
+        _id: new Types.ObjectId(),
         username,
         password: 'hashed',
         comparePassword: jest.fn().mockResolvedValue(true),
@@ -105,22 +105,22 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should return a signed JWT token for valid credentials', async () => {
       const loginDto = { username: 'testuser', password: 'testpass' };
-      const user = {
-        _id: 'user-id',
+      const user: Partial<User> = {
+        _id: new Types.ObjectId(),
         username: loginDto.username,
         password: 'hashed-password',
         comparePassword: jest.fn().mockResolvedValue(true),
       };
       const token = 'jwt-token';
 
-      jest.spyOn(authService, 'validateUser').mockResolvedValue(user as any);
+      jest.spyOn(authService, 'validateUser').mockResolvedValue(user as User);
       mockJwtService.signAsync.mockResolvedValue(token);
 
       const result = await authService.login(loginDto);
 
       expect(authService.validateUser).toHaveBeenCalledWith(loginDto.username, loginDto.password);
       expect(jwtService.signAsync).toHaveBeenCalledWith({
-        sub: user._id,
+        sub: user._id?.toString(),
         username: user.username,
       });
       expect(result).toBe(token);

@@ -7,11 +7,12 @@ import { FlightsModule } from '../src/flights/flights.module';
 import { UsersModule } from '../src/users/users.module';
 
 /**
- * The root application module.
+ * The AppTestModule is a custom module used for end-to-end (e2e) testing.
  *
  * - Loads environment variables using ConfigModule (with support for production and local environments).
- * - Connects to MongoDB using MongooseModule.
+ * - Connects to a dedicated MongoDB test database using MongooseModule.
  * - Imports AuthModule, UsersModule, and FlightsModule for authentication, user, and flight management.
+ * - Ensures all dependencies are available for isolated and reliable test execution.
  */
 @Module({
   imports: [
@@ -19,12 +20,10 @@ import { UsersModule } from '../src/users/users.module';
       envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local',
       isGlobal: true,
     }),
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/flight-api'),
+    MongooseModule.forRoot('mongodb://localhost/flight-e2e-test'),
     AuthModule,
     UsersModule,
     FlightsModule,
   ],
-  controllers: [],
-  providers: [],
 })
-export class AppModule {}
+export class AppTestModule {}

@@ -1,31 +1,21 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
-import { AppModule } from '../src/app.module';
-import { passwordErrorMessage } from '../src/auth/dto/register.dto';
-import { AllExceptionsFilter } from '../src/common/filters/all-exceptions.filter';
+import { setupAppGlobals } from '../src/common/utilities/app-setup.util';
+import { AppTestModule } from './app-tests.module';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      imports: [AppModule, MongooseModule.forRoot('mongodb://localhost/nest-auth-test')],
+      imports: [AppTestModule],
     }).compile();
 
     app = module.createNestApplication();
 
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-
-    app.useGlobalFilters(new AllExceptionsFilter());
+    setupAppGlobals(app);
 
     await app.init();
   });
@@ -63,11 +53,10 @@ describe('AuthController (e2e)', () => {
 
     expect(res.body.message).toBeDefined();
     expect(typeof res.body.message).toBe('string');
-    expect(res.body.message).toBe(passwordErrorMessage);
+    expect(res.body.message).toBe('Invalid payload');
   });
 
-  // TODO: fix me later, e2e test fails due to validation pipe not catching special characters in username
-  /*it('should fail to register user with special characters in username', async () => {
+  it('should fail to register user with special characters in username', async () => {
     const invalidUsername = 'invalid$user!';
     const password = 'Val1d_Pass!';
 
@@ -78,6 +67,6 @@ describe('AuthController (e2e)', () => {
 
     expect(res.body.message).toBeDefined();
     expect(typeof res.body.message).toBe('string');
-    expect(res.body.message).toBe(usernameErrorMessage);
-  });*/
+    expect(res.body.message).toBe('Invalid payload');
+  });
 });
