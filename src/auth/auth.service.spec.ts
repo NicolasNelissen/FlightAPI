@@ -126,14 +126,12 @@ describe('AuthService', () => {
       expect(result).toBe(token);
     });
 
-    it('should return null for invalid credentials', async () => {
+    it('should throw UnauthorizedException for invalid credentials', async () => {
       const loginDto = { username: 'testuser', password: 'wrongpass' };
 
-      jest.spyOn(authService, 'validateUser').mockResolvedValue(null);
+      jest.spyOn(authService, 'validateUser').mockRejectedValue(new UnauthorizedException());
 
-      const result = await authService.login(loginDto);
-
-      expect(result).toBeNull();
+      await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
   });
 });

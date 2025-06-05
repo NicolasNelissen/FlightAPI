@@ -7,12 +7,20 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
+import { Authentication } from './dto/authentication.dto';
+import { Registration } from './dto/registration.dto';
+import { Token } from './dto/token.dto';
 
 /**
  * Controller for authentication endpoints.
@@ -39,15 +47,20 @@ export class AuthController {
    */
   @Post('')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Create a token for a user' })
-  @ApiResponse({
-    status: 200,
+  @ApiSecurity('bearerAuth')
+  @ApiOperation({ summary: 'Create a token for a user', operationId: 'createToken' })
+  @ApiOkResponse({
     description: 'Successful operation',
-    schema: { example: { token: 'jwt-token-here' } },
+    content: {
+      'application/json': {
+        schema: { $ref: getSchemaPath(Token) },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Invalid payload' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto) {
+  @ApiResponse({ status: 500, description: 'Something went wrong' })
+  async login(@Body() loginDto: Authentication): Promise<Token> {
     const token = await this.authService.login(loginDto);
 
     if (!token) {
@@ -66,11 +79,12 @@ export class AuthController {
    */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user' })
+  @ApiOperation({ summary: 'Register a new user', operationId: 'registerUser' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Username already taken' })
   @ApiResponse({ status: 400, description: 'Invalid payload' })
-  async register(@Body() registerDto: RegisterDto) {
+  @ApiResponse({ status: 500, description: 'Something went wrong' })
+  async register(@Body() registerDto: Registration) {
     const existingUser = await this.usersService.findByUsername(registerDto.username);
 
     if (existingUser) {

@@ -2,9 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-import { CreateFlightDto } from './dto/create-flight.dto';
-import { UpdateFlightDto } from './dto/update-flight.dto';
-import { Flight } from './schemas/flight.schema';
+import { Flight } from './dto/flight.dto';
 
 /**
  * Service for managing flight resources.
@@ -19,12 +17,12 @@ export class FlightsService {
   /**
    * Creates a new flight for the specified user.
    *
-   * @param createFlightDto - The data for the new flight.
+   * @param flightDto - The data for the new flight.
    * @param userId - The ID of the user creating the flight.
    * @returns The created Flight document.
    */
-  async create(createFlightDto: CreateFlightDto, userId: string): Promise<Flight> {
-    const createdFlight = new this.flightModel({ ...createFlightDto, user: userId });
+  async create(flightDto: Flight, userId: string): Promise<Flight> {
+    const createdFlight = new this.flightModel({ ...flightDto, user: userId });
     return createdFlight.save();
   }
 
@@ -69,10 +67,10 @@ export class FlightsService {
    * Updates a specific flight by its ID.
    *
    * @param id - The ID of the flight to update.
-   * @param updateFlightDto - The updated flight data.
+   * @param flightDto - The updated flight data.
    * @returns The updated Flight document, or throws NotFoundException if not found.
    */
-  async update(id: string, updateFlightDto: UpdateFlightDto): Promise<Flight | null> {
+  async update(id: string, flightDto: Flight): Promise<Flight | null> {
     const flight = await this.flightModel
       .findOne(
         {
@@ -90,7 +88,7 @@ export class FlightsService {
     const updatedFlight = await this.flightModel
       .findOneAndUpdate(
         { _id: id },
-        { ...updateFlightDto },
+        { ...flightDto },
         { new: true, runValidators: true, lean: true },
       )
       .exec();

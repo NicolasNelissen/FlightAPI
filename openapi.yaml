@@ -1,0 +1,295 @@
+openapi: 3.0.0
+paths:
+  /auth:
+    post:
+      operationId: createToken
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Authentication'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Invalid credentials
+        '500':
+          description: Something went wrong
+      security:
+        - bearerAuth: []
+      summary: Create a token for a user
+      tags: &ref_0
+        - Authentication
+  /auth/register:
+    post:
+      operationId: registerUser
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Registration'
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid payload
+        '409':
+          description: Username already taken
+        '500':
+          description: Something went wrong
+      summary: Register a new user
+      tags: *ref_0
+  /flights:
+    post:
+      operationId: createFlight
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Flight'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Flight'
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Internal Identifier for the flight
+        '400':
+          description: Invalid payload
+        '401':
+          description: User is not authenticated
+        '500':
+          description: Something went wrong
+      security: &ref_1
+        - bearerAuth: []
+      summary: Create a flight
+      tags: &ref_2
+        - Flights
+    get:
+      operationId: retrieveAllFlights
+      parameters: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Flight'
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Internal Identifier for the flight
+        '401':
+          description: User is not authenticated
+        '500':
+          description: Something went wrong
+      security: *ref_1
+      summary: Retrieve all flights
+      tags: *ref_2
+  /flights/{flightId}:
+    get:
+      operationId: retrieveFlight
+      parameters:
+        - name: flightId
+          required: true
+          in: path
+          description: Flight ID
+          schema:
+            type: string
+            pattern: ^[a-fA-F0-9]{24}$
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Flight'
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Internal Identifier for the flight
+        '401':
+          description: User is not authenticated
+        '404':
+          description: Flight not found
+        '500':
+          description: Something went wrong
+      security: *ref_1
+      summary: Retrieve a flights by id
+      tags: *ref_2
+    patch:
+      operationId: updateFlight
+      parameters:
+        - name: flightId
+          required: true
+          in: path
+          description: Flight ID
+          schema:
+            type: string
+            pattern: ^[a-fA-F0-9]{24}$
+            example: 507f1f77bcf86cd799439011
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Flight'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Flight'
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Internal Identifier for the flight
+        '400':
+          description: Invalid payload
+        '401':
+          description: User is not authenticated
+        '404':
+          description: Flight not found
+        '500':
+          description: Something went wrong
+      security: *ref_1
+      summary: Update a flight
+      tags: *ref_2
+    delete:
+      operationId: deleteFlight
+      parameters:
+        - name: flightId
+          required: true
+          in: path
+          description: Flight ID
+          schema:
+            type: string
+            pattern: ^[a-fA-F0-9]{24}$
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '204':
+          description: The flight was deleted successfully.
+        '401':
+          description: User is not authenticated
+        '404':
+          description: Flight not found
+        '500':
+          description: Something went wrong
+      security: *ref_1
+      summary: Remove a flights by id
+      tags: *ref_2
+info:
+  title: Aviobook Code Challenge
+  description: CRUD API for the AVIOBOOK assessment
+  version: 1.0.0
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearerAuth:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas:
+    Authentication:
+      type: object
+      properties:
+        username:
+          type: string
+          example: testuser
+          description: The username of the user
+        password:
+          type: string
+          example: pass1234
+          description: The password of the user
+      required:
+        - username
+        - password
+    Registration:
+      type: object
+      properties:
+        username:
+          type: string
+          example: newuser
+          description: Unique username for the user
+        password:
+          type: string
+          example: strongPassword123
+          description: User password
+      required:
+        - username
+        - password
+    Schedule:
+      type: object
+      properties:
+        std:
+          type: string
+          description: The scheduled time of departure, ISO 8601 format
+          format: date-time
+        sta:
+          type: string
+          description: The scheduled time of arrival, ISO 8601 format
+          format: date-time
+      required:
+        - std
+        - sta
+    Flight:
+      type: object
+      properties:
+        aircraft:
+          type: string
+          description: A code describing the aircraft assigned to the flight
+          example: CSTRC
+          minLength: 1
+          maxLength: 10
+        flightNumber:
+          type: string
+          description: A code that identifies the flight
+          example: AVIO201
+          minLength: 1
+          maxLength: 10
+        schedule:
+          description: Flight schedule, including standard departure and arrival times.
+          allOf:
+            - $ref: '#/components/schemas/Schedule'
+        departure:
+          type: string
+          description: Identifier for the departure airport
+          example: LPPD
+          minLength: 4
+          maxLength: 4
+        destination:
+          type: string
+          description: Identifier for the destination airport
+          example: LPLA
+          minLength: 4
+          maxLength: 4

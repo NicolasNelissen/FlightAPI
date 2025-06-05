@@ -14,7 +14,7 @@ export const usernameErrorMessage =
  * - Username: 3-20 characters, only lowercase letters, numbers, and underscores.
  * - Password: Minimum 8 characters, must include uppercase, lowercase, number, and special character.
  */
-export class RegisterDto {
+export class Registration {
   /**
    * Unique username for the user.
    * Must be 3-20 characters and contain only lowercase letters, numbers, and underscores.

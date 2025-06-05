@@ -2,11 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 
 /**
- * Data Transfer Object for user login.
+ * Data Transfer Object for authentication.
  *
  * Contains the required fields for authenticating a user: username and password.
  */
-export class LoginDto {
+export class Authentication {
   /**
    * The username of the user.
    * @example "testuser"

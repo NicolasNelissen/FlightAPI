@@ -2,7 +2,8 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { UsersService } from '../../src/users/users.service';
-import { JwtStrategy, ValidatedJwtData } from './jwt.strategy';
+import { ValidatedJwtData } from './dto/jwt-validated-data.dto';
+import { JwtStrategy } from './jwt.strategy';
 
 describe('JwtStrategy', () => {
   let jwtStrategy: JwtStrategy;

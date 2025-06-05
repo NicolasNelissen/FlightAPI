@@ -4,30 +4,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { UsersService } from '../../src/users/users.service';
-/**
- * JWT authentication strategy.
- *
- * Validates JWT tokens and attaches the authenticated user to the request.
- * - Uses the JWT secret from environment variables via ConfigService.
- * - Extracts the JWT from the Authorization header as a Bearer token.
- * - Validates the user exists in the database for the given JWT payload.
- *
- * Throws an UnauthorizedException if the user does not exist or the token is invalid.
- */
-interface JwtPayload {
-  sub: string;
-  username: string;
-  iat?: number;
-  exp?: number;
-}
-
-/**
- * The validated user data attached to the request after successful JWT validation.
- */
-export interface ValidatedJwtData {
-  userId: string;
-  username: string;
-}
+import { JwtPayload } from './dto/jwt-payload.dto';
+import { ValidatedJwtData } from './dto/jwt-validated-data.dto';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

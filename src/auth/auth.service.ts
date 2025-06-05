@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { User } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
+import { Authentication } from './dto/authentication.dto';
 
 /**
  * Service for authentication logic.
@@ -41,7 +41,7 @@ export class AuthService {
    * @param loginDto - The login credentials (username and password).
    * @returns The JWT token as a string, or null if authentication fails.
    */
-  async login(loginDto: LoginDto): Promise<string | null> {
+  async login(loginDto: Authentication): Promise<string | null> {
     const user = await this.validateUser(loginDto.username, loginDto.password);
     if (!user) return null;
 
