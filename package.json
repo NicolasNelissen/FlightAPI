@@ -1,6 +1,9 @@
 {
   "name": "flightapi",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "exports": {
     "./dist/*": "./dist/*.js"
   },
